@@ -21,3 +21,9 @@ $router->post('auth/register', [AuthController::class, 'register']);
 $router->get('auth/login', [AuthController::class, 'showLogin']);
 $router->post('auth/login', [AuthController::class, 'login']);
 $router->post('auth/logout', [AuthController::class, 'logout']);
+
+// Password recovery ----------------------------------------------------------
+$router->get('auth/forgot-password', [AuthController::class, 'showForgotPassword']);
+$router->post('auth/forgot-password', [AuthController::class, 'sendResetLink']);
+$router->get('auth/reset-password', [AuthController::class, 'showResetPassword']);
+$router->post('auth/reset-password', [AuthController::class, 'resetPassword']);
