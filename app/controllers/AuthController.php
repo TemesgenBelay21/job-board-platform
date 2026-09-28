@@ -6,7 +6,9 @@ use App\Core\Controller;
 use App\Core\Database;
 use App\Core\Session;
 use App\Core\Validator;
+use App\Helpers\Mailer;
 use App\Models\CompanyProfile;
+use App\Models\PasswordReset;
 use App\Models\SeekerProfile;
 use App\Models\User;
 
@@ -203,6 +205,134 @@ class AuthController extends Controller
         $this->signOut();
 
         $this->redirect('/');
+    }
+
+    /** Show the "forgot your password" form. */
+    public function showForgotPassword()
+    {
+        echo $this->view('auth/forgot-password', [
+            'title' => 'Reset your password',
+        ], 'auth');
+    }
+
+    /**
+     * Issue a reset link for an email address.
+     *
+     * The same confirmation is shown whether or not the address is registered,
+     * so this page cannot be used to discover which emails have accounts.
+     */
+    public function sendResetLink()
+    {
+        $this->requireMethod('POST');
+        $this->verifyCsrf();
+
+        $userModel = new User();
+        $tokens = new PasswordReset();
+
+        $validator = new Validator($_POST);
+        $validator->validate(['email' => 'required|email']);
+
+        if ($validator->fails()) {
+            $this->backWithErrors($validator->errorMessages(), url('auth/forgot-password'));
+        }
+
+        $email = strtolower(trim((string) $validator->value('email')));
+        $user = $userModel->findByEmail($email);
+
+        if ($user !== null) {
+            $token = $tokens->createForUser($user['id']);
+            $link = url('auth/reset-password', ['token' => $token]);
+
+            $sent = Mailer::sendPasswordReset($user['email'], $user['name'], $link);
+
+            // Locally there is usually no mail server, so show the link instead
+            // of leaving the developer guessing whether it was delivered.
+            if (!$sent && Mailer::isLocal()) {
+                flash_info('Mail is not configured on this machine, so here is the reset link: ' . $link);
+            }
+        }
+
+        clear_old_input();
+
+        // The same wording either way: this page must not reveal which email
+        // addresses have an account.
+        flash_success('If that email address has an account, a reset link is on its way.');
+
+        $this->redirect('auth/login');
+    }
+
+    /** Show the new-password form for a token from a reset email. */
+    public function showResetPassword()
+    {
+        $token = isset($_GET['token']) ? (string) $_GET['token'] : '';
+
+        if (!PasswordReset::looksLikeToken($token)) {
+            flash_error('That password reset link is not valid.');
+
+            $this->redirect('auth/forgot-password');
+        }
+
+        $reset = new PasswordReset();
+
+        if ($reset->findValidByToken($token) === null) {
+            flash_error('That password reset link has expired or has already been used.');
+
+            $this->redirect('auth/forgot-password');
+        }
+
+        echo $this->view('auth/reset-password', [
+            'title' => 'Choose a new password',
+            'token' => $token,
+        ], 'auth');
+    }
+
+    /**
+     * Store the new password.
+     *
+     * The token is spent first: if the update then failed, the user requests a
+     * new link rather than reusing one, which avoids a partial application.
+     */
+    public function resetPassword()
+    {
+        $this->requireMethod('POST');
+        $this->verifyCsrf();
+
+        $token = isset($_POST['token']) ? (string) $_POST['token'] : '';
+
+        $validator = new Validator($_POST);
+        $validator->validate([
+            'password' => 'required|password_strength|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            $this->backWithErrors(
+                $validator->errorMessages(),
+                url('auth/reset-password', ['token' => $token])
+            );
+        }
+
+        $tokens = new PasswordReset();
+        $reset = PasswordReset::looksLikeToken($token) ? $tokens->findValidByToken($token) : null;
+
+        if ($reset === null) {
+            flash_error('That password reset link has expired or has already been used.');
+
+            $this->redirect('auth/forgot-password');
+        }
+
+        if (!$tokens->consume($reset['id'])) {
+            // Two requests raced: the first one to consume the token wins.
+            flash_error('That password reset link has already been used.');
+
+            $this->redirect('auth/forgot-password');
+        }
+
+        (new User())->updatePassword($reset['user_id'], $_POST['password']);
+
+        clear_old_input();
+        flash_success('Your password has been changed. You can sign in now.');
+
+        $this->redirect('auth/login');
     }
 
     private function homePathForRole($role)
