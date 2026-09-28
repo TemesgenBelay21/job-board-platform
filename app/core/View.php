@@ -48,6 +48,12 @@ class View
         return self::capture($layoutFile, array_merge(self::$shared, $data, ['content' => $content]));
     }
 
+    /** Check whether a view file exists before trying to render it. */
+    public static function exists($view)
+    {
+        return is_file(self::resolveView($view));
+    }
+
     /** Include a partial from app/views and return its output. */
     public static function partial($name, array $data = [])
     {
