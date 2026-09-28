@@ -580,3 +580,81 @@
 .auth-shell__back a:hover {
     color: var(--color-primary);
 }
+
+/* --------------------------------------------------------------------------
+   Narrow screens
+   --------------------------------------------------------------------------
+   The sidebar is a fixed column wide enough to swallow the page on a phone,
+   so below the breakpoint it becomes an off-canvas panel: the content takes
+   the full width and the sidebar only slides in when the top bar button
+   opens it. app.js toggles .is-open on the sidebar and .sidebar-open on the
+   body, and reveals the backdrop.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+    .nav-toggle,
+    .sidebar-toggle {
+        display: flex;
+    }
+
+    /* The header nav drops below the brand as a full-width panel. */
+    .primary-nav {
+        display: none;
+        width: 100%;
+        padding-top: var(--space-3);
+        border-top: 1px solid var(--color-border);
+    }
+
+    .primary-nav.is-open {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-3);
+    }
+
+    .primary-nav__list {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-1);
+    }
+
+    .primary-nav__list--actions {
+        padding-left: 0;
+        padding-top: var(--space-3);
+        border-top: 1px solid var(--color-border);
+    }
+
+    .dashboard {
+        margin-left: 0;
+    }
+
+    /* Let the brand and toggle share the first row, with the nav panel below. */
+    .site-header__inner {
+        flex-wrap: wrap;
+        gap: var(--space-3);
+        padding-top: var(--space-3);
+        padding-bottom: var(--space-3);
+    }
+
+    .sidebar {
+        width: min(var(--sidebar-width), 85vw);
+        transform: translateX(-100%);
+        transition: transform var(--transition);
+    }
+
+    .sidebar.is-open {
+        transform: translateX(0);
+        box-shadow: var(--shadow-lg);
+    }
+
+    /* Stop the page behind the open panel from scrolling. */
+    body.sidebar-open {
+        overflow: hidden;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar {
+        transition: none;
+    }
+}
