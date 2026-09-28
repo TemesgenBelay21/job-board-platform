@@ -42,6 +42,6 @@
     </div>
 
     <div class="container site-footer__bottom">
-        <p>&copy; <?= date('Y') ?> <?= e(app_name()) ?>. Built with PHP and MySQL.</p>
+        <p>&copy; <?= date('Y') ?> <?= e(app_name()) ?>. All rights reserved.</p>
     </div>
 </footer>
