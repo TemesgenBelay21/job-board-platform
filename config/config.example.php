@@ -22,6 +22,9 @@ return [
         // Shown in the header and page titles.
         'name' => 'JobBoard',
 
+        // Used for every date/time rendered by the app.
+        'timezone' => 'UTC',
+
         // Seconds of inactivity before a session is expired and the user is logged out.
         'session_timeout' => 1800,
     ],
