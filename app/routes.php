@@ -10,8 +10,10 @@
  */
 
 use App\Core\Router;
+use App\Controllers\AdminController;
 use App\Controllers\AuthController;
 use App\Controllers\CompanyController;
+use App\Controllers\EmployerController;
 use App\Controllers\HomeController;
 use App\Controllers\JobController;
 use App\Controllers\NotificationController;
@@ -54,3 +56,32 @@ $router->get('seeker/applications', [SeekerController::class, 'applications']);
 $router->post('seeker/applications/{id:\d+}/withdraw', [JobController::class, 'withdraw']);
 $router->get('seeker/saved-jobs', [SeekerController::class, 'savedJobs']);
 $router->post('seeker/saved-jobs/toggle', [SeekerController::class, 'toggleSavedJob']);
+
+// Employer -------------------------------------------------------------------
+$router->get('employer/dashboard', [EmployerController::class, 'dashboard']);
+$router->get('employer/jobs', [EmployerController::class, 'jobs']);
+$router->get('employer/jobs/create', [EmployerController::class, 'createJob']);
+$router->post('employer/jobs', [EmployerController::class, 'storeJob']);
+$router->get('employer/jobs/{id:\d+}/edit', [EmployerController::class, 'editJob']);
+$router->post('employer/jobs/{id:\d+}', [EmployerController::class, 'updateJob']);
+$router->post('employer/jobs/{id:\d+}/close', [EmployerController::class, 'closeJob']);
+$router->post('employer/jobs/{id:\d+}/reopen', [EmployerController::class, 'reopenJob']);
+$router->post('employer/jobs/{id:\d+}/delete', [EmployerController::class, 'deleteJob']);
+$router->get('employer/applicants', [EmployerController::class, 'applicants']);
+$router->post('employer/applications/{id:\d+}/status', [EmployerController::class, 'updateApplicationStatus']);
+$router->get('employer/applications/{id:\d+}/resume', [ResumeController::class, 'forApplication']);
+$router->get('employer/company', [EmployerController::class, 'editCompany']);
+$router->post('employer/company', [EmployerController::class, 'updateCompany']);
+$router->post('employer/company/logo', [EmployerController::class, 'uploadLogo']);
+$router->post('employer/company/logo/delete', [EmployerController::class, 'deleteLogo']);
+
+// Admin ----------------------------------------------------------------------
+$router->get('admin/dashboard', [AdminController::class, 'dashboard']);
+$router->get('admin/users', [AdminController::class, 'users']);
+$router->post('admin/users/{id:\d+}/status', [AdminController::class, 'updateUserStatus']);
+$router->get('admin/jobs', [AdminController::class, 'jobs']);
+$router->post('admin/jobs/{id:\d+}/status', [AdminController::class, 'updateJobStatus']);
+$router->get('admin/categories', [AdminController::class, 'categories']);
+$router->post('admin/categories', [AdminController::class, 'storeCategory']);
+$router->post('admin/categories/{id:\d+}', [AdminController::class, 'updateCategory']);
+$router->post('admin/categories/{id:\d+}/delete', [AdminController::class, 'deleteCategory']);
