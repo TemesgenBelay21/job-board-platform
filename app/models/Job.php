@@ -236,4 +236,130 @@ class Job extends Model
 
         return $this->update($jobId, ['status' => $status]);
     }
+
+    /** Sort orders offered on the browse page. */
+    const SORTS = [
+        'newest' => 'Newest first',
+        'oldest' => 'Oldest first',
+        'title' => 'Job title A-Z',
+        'salary' => 'Highest salary',
+    ];
+
+    const DEFAULT_SORT = 'newest';
+
+    public static function isValidSort($sort)
+    {
+        return array_key_exists($sort, self::SORTS);
+    }
+
+    /**
+     * The public browse search: keyword, category, type, location, salary and
+     * pagination, with a matching total for the pager.
+     *
+     * Every value is bound, and only recognised sort keys reach the ORDER BY,
+     * so nothing from the query string can alter the shape of the statement.
+     *
+     * @param array $filters q, category, job_type, location, salary_min, sort
+     *
+     * @return array{rows: array, total: int, page: int, per_page: int, last_page: int}
+     */
+    public function searchPublic(array $filters = [], $perPage = 10)
+    {
+        $where = ["j.`status` = 'open'", '(j.`deadline` IS NULL OR j.`deadline` >= CURDATE())'];
+        $params = [];
+
+        $keyword = isset($filters['q']) ? trim((string) $filters['q']) : '';
+
+        if ($keyword !== '') {
+            $where[] = '(j.`title` LIKE ? OR j.`description` LIKE ? OR c.`company_name` LIKE ?)';
+            // Escape the wildcard characters so a literal % is searched for.
+            $like = '%' . $this->escapeLike($keyword) . '%';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        if (!empty($filters['category'])) {
+            $where[] = 'j.`category_id` = ?';
+            $params[] = (int) $filters['category'];
+        }
+
+        if (!empty($filters['job_type']) && $this->isValidType($filters['job_type'])) {
+            $where[] = 'j.`job_type` = ?';
+            $params[] = $filters['job_type'];
+        }
+
+        $location = isset($filters['location']) ? trim((string) $filters['location']) : '';
+
+        if ($location !== '') {
+            $where[] = 'j.`location` LIKE ?';
+            $params[] = '%' . $this->escapeLike($location) . '%';
+        }
+
+        // A job matches when either end of its range reaches the minimum.
+        if (!empty($filters['salary_min'])) {
+            $where[] = '(j.`salary_max` IS NULL OR j.`salary_max` >= ?)';
+            $params[] = (int) $filters['salary_min'];
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $total = (int) Database::fetchColumn(
+            'SELECT COUNT(*)
+               FROM `jobs` j
+               INNER JOIN `company_profiles` c ON c.`id` = j.`company_id`
+              WHERE ' . $whereSql,
+            $params
+        );
+
+        $perPage = max(1, (int) $perPage);
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = isset($filters['page']) ? max(1, (int) $filters['page']) : 1;
+        // A page past the end shows the last page rather than an empty grid.
+        $page = min($page, $lastPage);
+
+        $rows = Database::fetchAll(
+            'SELECT ' . self::LISTING_COLUMNS . ' ' . self::LISTING_JOINS . '
+              WHERE ' . $whereSql . '
+              ORDER BY ' . $this->sortClause($filters) . '
+              LIMIT ' . $perPage . ' OFFSET ' . (($page - 1) * $perPage),
+            $params
+        );
+
+        return [
+            'rows' => $rows,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'last_page' => $lastPage,
+        ];
+    }
+
+    /** Translate a sort key into a fixed ORDER BY fragment. */
+    private function sortClause(array $filters)
+    {
+        $sort = isset($filters['sort']) ? $filters['sort'] : self::DEFAULT_SORT;
+
+        if (!self::isValidSort($sort)) {
+            $sort = self::DEFAULT_SORT;
+        }
+
+        switch ($sort) {
+            case 'oldest':
+                return 'j.`created_at` ASC, j.`id` ASC';
+            case 'title':
+                return 'j.`title` ASC, j.`id` ASC';
+            case 'salary':
+                // Listings with no salary go last rather than counting as zero.
+                return '(j.`salary_max` IS NULL) ASC, j.`salary_max` DESC, j.`id` DESC';
+            default:
+                return 'j.`created_at` DESC, j.`id` DESC';
+        }
+    }
+
+    /** Escape LIKE wildcards in user input. */
+    private function escapeLike($value)
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string) $value);
+    }
 }
