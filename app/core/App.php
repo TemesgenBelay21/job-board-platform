@@ -31,6 +31,7 @@ class App
         Autoloader::register(self::$basePath);
         require self::$basePath . '/app/helpers/functions.php';
         require self::$basePath . '/app/helpers/flash.php';
+        require self::$basePath . '/app/helpers/csrf.php';
 
         self::$local = self::config('app.env', 'local') === 'local';
 
