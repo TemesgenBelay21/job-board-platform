@@ -82,7 +82,6 @@ class AuthController extends Controller
         $email = strtolower(trim((string) $validator->value('email')));
 
         if ($email !== '' && $userModel->emailExists($email)) {
-            $validator->validate([]);
             flash_error('That email address is already registered. Try logging in instead.');
             $this->backWithErrors([], url('auth/register'));
         }
@@ -188,7 +187,7 @@ class AuthController extends Controller
         clear_old_input();
         flash_success('Welcome back, ' . $user['name'] . '.');
 
-        if (is_string($intended) && $intended !== '' && $this->isOwnUrl($intended)) {
+        if (is_own_url($intended)) {
             header('Location: ' . $intended, true, 302);
             exit;
         }
@@ -338,13 +337,5 @@ class AuthController extends Controller
     private function homePathForRole($role)
     {
         return isset(self::HOME_BY_ROLE[$role]) ? self::HOME_BY_ROLE[$role] : '/';
-    }
-
-    /** Only follow a stored redirect that points back at this installation. */
-    private function isOwnUrl($url)
-    {
-        $base = \App\Core\App::baseUrl();
-
-        return strpos($url, $base) === 0;
     }
 }
