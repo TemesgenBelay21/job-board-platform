@@ -27,7 +27,7 @@ abstract class Controller
      */
     protected function view($view, array $data = [], $layout = 'main')
     {
-        $this->shareViewData($data);
+        $data = $this->withSharedData($data);
 
         return View::render($view, $data, $layout);
     }
@@ -35,16 +35,17 @@ abstract class Controller
     /** Render a view without a layout (for partial style responses). */
     protected function viewPartial($view, array $data = [])
     {
-        $this->shareViewData($data);
+        $data = $this->withSharedData($data);
 
         return View::render($view, $data, null);
     }
 
     /**
-     * Values every view needs: the signed in user and the unread notification
-     * count for the header bell.
+     * Add the variables every view needs: the signed in user and the unread
+     * notification count for the header bell. Values passed in by the action
+     * always win, so a view can override them.
      */
-    private function shareViewData(array $data)
+    private function withSharedData(array $data)
     {
         if (!array_key_exists('user', $data)) {
             $data['user'] = $this->user();
@@ -53,6 +54,8 @@ abstract class Controller
         if (!array_key_exists('unreadCount', $data)) {
             $data['unreadCount'] = $this->unreadNotificationCount();
         }
+
+        return $data;
     }
 
     /** Redirect and stop. */
@@ -132,7 +135,7 @@ abstract class Controller
         $fresh = (new \App\Models\User())->find($user['id']);
 
         if ($fresh === null || $fresh['status'] !== 'active') {
-            $this->logout();
+            $this->signOut();
 
             return null;
         }
@@ -167,7 +170,7 @@ abstract class Controller
     }
 
     /** Sign a user in: fresh session id, new CSRF token, user in session. */
-    protected function login(array $user)
+    protected function authenticate(array $user)
     {
         Session::regenerate();
         Csrf::regenerate();
@@ -181,7 +184,7 @@ abstract class Controller
     }
 
     /** Sign a user out and destroy the session completely. */
-    protected function logout()
+    protected function signOut()
     {
         Session::destroy();
 
