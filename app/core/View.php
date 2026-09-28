@@ -13,6 +13,30 @@ class View
     /** @var array Shared variables every view receives, e.g. the logged in user. */
     private static $shared = [];
 
+    /** @var array Named stacks a view can push content onto, e.g. 'scripts'. */
+    private static $stacks = [];
+
+    /**
+     * Push markup onto a named stack, printed by the layout.
+     *
+     * The view file is rendered before the layout, so a view can register its
+     * own page script here and the layout can print it in <head> or before
+     * </body> without the layout needing to know about the view.
+     */
+    public static function push($stack, $content)
+    {
+        self::$stacks[$stack][] = $content;
+    }
+
+    /** Read and clear a named stack. */
+    public static function stack($name)
+    {
+        $items = isset(self::$stacks[$name]) ? self::$stacks[$name] : [];
+        unset(self::$stacks[$name]);
+
+        return implode("\n", $items);
+    }
+
     public static function share($key, $value)
     {
         self::$shared[$key] = $value;
