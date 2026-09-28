@@ -129,6 +129,10 @@ CREATE TABLE IF NOT EXISTS `jobs` (
     `salary_max`   INT UNSIGNED NULL,
     `deadline`     DATE          NULL,
     `status`       ENUM('open', 'closed', 'pending') NOT NULL DEFAULT 'pending',
+    -- Set when an admin first approves the listing, and kept afterwards. It is
+    -- what lets an employer reopen a closed job straight away, while a listing
+    -- that was never approved still has to go through review.
+    `approved_at`  DATETIME     NULL,
     `created_at`   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),

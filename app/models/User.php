@@ -183,7 +183,7 @@ class User extends Model
 
         if (!empty($options['q'])) {
             $where[] = '(`name` LIKE ? OR `email` LIKE ?)';
-            $like = '%' . $options['q'] . '%';
+            $like = '%' . $this->escapeLike($options['q']) . '%';
             $params[] = $like;
             $params[] = $like;
         }
@@ -198,5 +198,17 @@ class User extends Model
     public function recent($limit = 5)
     {
         return $this->findAll('`created_at` DESC, `id` DESC', $limit);
+    }
+
+    /**
+     * Neutralise the LIKE wildcards in a search term.
+     *
+     * The value is bound, so this is not an injection fix; it stops a search for
+     * "100%" or "_ohn" behaving as an unintended wildcard. The backslash is the
+     * default escape character in MySQL.
+     */
+    private function escapeLike($value)
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string) $value);
     }
 }

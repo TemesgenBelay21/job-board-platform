@@ -60,6 +60,53 @@ class CompanyProfile extends Model
     }
 
     /**
+     * Update the editable parts of a company profile.
+     *
+     * `user_id` is not settable here: the profile is reached by the signed in
+     * employer's own user id, and allowing it to be written would let a form
+     * field move the profile onto another account.
+     *
+     * @param int   $companyId
+     * @param array $values
+     *
+     * @return bool True when a row was updated
+     */
+    public function updateDetails($companyId, array $values)
+    {
+        unset($values['user_id'], $values['id'], $values['logo']);
+
+        if ($values === []) {
+            return false;
+        }
+
+        $set = implode(', ', array_map(function ($column) {
+            return '`' . $column . '` = ?';
+        }, array_keys($values)));
+
+        $params = array_values($values);
+        $params[] = (int) $companyId;
+
+        // Note: this is the affected row count, not proof that a row matched.
+        // MySQL reports 0 when the new values are identical to the old ones, so
+        // a caller cannot use this to tell "not found" from "nothing to
+        // change". Callers that care about ownership have to check the record
+        // first.
+        return Database::execute(
+            'UPDATE `company_profiles` SET ' . $set . ' WHERE `id` = ?',
+            $params
+        ) > 0;
+    }
+
+    /** Clear the stored logo, leaving the column null. */
+    public function clearLogo($companyId)
+    {
+        return Database::execute(
+            'UPDATE `company_profiles` SET `logo` = NULL WHERE `id` = ?',
+            [(int) $companyId]
+        ) > 0;
+    }
+
+    /**
      * A company as the public sees it, used by the company page and its
      * listing count.
      */

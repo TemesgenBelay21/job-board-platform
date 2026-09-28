@@ -303,3 +303,36 @@ if (!function_exists('time_ago')) {
         return 'just now';
     }
 }
+
+if (!function_exists('salary_range')) {
+    /**
+     * A salary range for display, e.g. "40,000 - 60,000" or "From 45,000".
+     *
+     * Both bounds are nullable, since a listing may publish one end or, more
+     * often, prefer to discuss pay and leave both empty. An empty string is
+     * returned when neither bound is set, so a view can test it once with an
+     * empty() rather than repeating the null checks.
+     *
+     * @param int|null $min
+     * @param int|null $max
+     */
+    function salary_range($min, $max)
+    {
+        $min = $min === null || $min === '' ? null : number_format((int) $min);
+        $max = $max === null || $max === '' ? null : number_format((int) $max);
+
+        if ($min === null && $max === null) {
+            return '';
+        }
+
+        if ($min === null) {
+            return 'Up to ' . $max;
+        }
+
+        if ($max === null) {
+            return 'From ' . $min;
+        }
+
+        return $min === $max ? $min : $min . ' - ' . $max;
+    }
+}

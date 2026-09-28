@@ -199,7 +199,10 @@ class Application extends Model
                     s.`location` AS `seeker_location`,
                     s.`headline` AS `seeker_headline`,
                     s.`skills` AS `seeker_skills`,
-                    s.`resume_path` AS `profile_resume_path`
+                    s.`resume_path` AS `profile_resume_path`,
+                    -- Named for the employer notification path, so a controller
+                    -- does not have to guess that `user_id` is the account.
+                    s.`user_id` AS `seeker_user_id`
                FROM `applications` a
                INNER JOIN `jobs` j ON j.`id` = a.`job_id`
                INNER JOIN `company_profiles` c ON c.`id` = j.`company_id`

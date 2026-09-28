@@ -167,7 +167,18 @@ class Validator
         }
     }
 
-    private function addError($field, $message)
+    /**
+     * Record a failure that a single rule cannot express.
+     *
+     * Public so a controller can add a cross field rule, such as a salary range
+     * whose maximum must not be below its minimum, or a foreign key that has to
+     * exist rather than merely be a number. Calls made before validate() are
+     * cleared by it, so add these after the rules have run.
+     *
+     * @param string $field
+     * @param string $message
+     */
+    public function addError($field, $message)
     {
         $this->errors[$field][] = $message;
     }

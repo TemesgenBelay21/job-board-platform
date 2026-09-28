@@ -53,6 +53,7 @@ class Job extends Model
         j.`salary_max`,
         j.`deadline`,
         j.`status`,
+        j.`approved_at`,
         j.`created_at`,
         j.`updated_at`,
         c.`company_name`,
@@ -185,7 +186,14 @@ class Job extends Model
      * All listings owned by a company, whatever their status. Used by the
      * employer dashboard and job management table.
      */
-    public function forCompany($companyId, $status = null)
+    /**
+     * A company's own listings, joined with the category name.
+     *
+     * @param int         $companyId
+     * @param string|null $status  Restrict to one status, or null for all
+     * @param int         $limit   0 for every listing
+     */
+    public function forCompany($companyId, $status = null, $limit = 0)
     {
         $sql = 'SELECT ' . self::LISTING_COLUMNS . ' ' . self::LISTING_JOINS . ' WHERE j.`company_id` = ?';
         $params = [(int) $companyId];
@@ -195,10 +203,14 @@ class Job extends Model
             $params[] = $status;
         }
 
-        return Database::fetchAll(
-            $sql . ' ORDER BY j.`created_at` DESC, j.`id` DESC',
-            $params
-        );
+        $sql .= ' ORDER BY j.`created_at` DESC, j.`id` DESC';
+
+        // The limit is cast to an int, never bound, so it cannot carry SQL.
+        if ($limit > 0) {
+            $sql .= ' LIMIT ' . (int) $limit;
+        }
+
+        return Database::fetchAll($sql, $params);
     }
 
     /** Count listings a company owns, optionally for one status. */
@@ -227,14 +239,104 @@ class Job extends Model
         ) > 0;
     }
 
-    /** Set the status of a listing, e.g. when reopening or closing it. */
-    public function setStatus($jobId, $status)
+    /**
+     * Set the status of a listing, e.g. when reopening or closing it.
+     *
+     * @param int    $jobId
+     * @param string $status
+     * @param int    $companyId Restrict to one company's listing, so an
+     *                         employer cannot move a job that is not theirs
+     *
+     * @return bool True when a row was updated
+     */
+    public function setStatus($jobId, $status, $companyId = null)
     {
         if (!$this->isValidStatus($status)) {
             throw new \InvalidArgumentException('Unknown job status: ' . $status);
         }
 
-        return $this->update($jobId, ['status' => $status]);
+        if ($companyId === null) {
+            return $this->update((int) $jobId, ['status' => $status]);
+        }
+
+        return Database::execute(
+            'UPDATE `jobs` SET `status` = ? WHERE `id` = ? AND `company_id` = ?',
+            [$status, (int) $jobId, (int) $companyId]
+        ) > 0;
+    }
+
+    /**
+     * Post a new listing.
+     *
+     * A new listing always starts as `pending`, whatever the caller asks for:
+     * only an admin may publish a job, and the override here is what stops an
+     * employer from posting straight to the public search.
+     *
+     * @return int The new job id
+     */
+    public function post($companyId, array $values)
+    {
+        $values['company_id'] = (int) $companyId;
+        $values['status'] = 'pending';
+
+        return $this->create($values);
+    }
+
+    /**
+     * Edit a listing, keeping it owned by the given company.
+     *
+     * `status` and `approved_at` are deliberately not editable here. A
+     * substantive edit sends the listing back for approval (see the controller)
+     * rather than letting the employer decide its own visibility, and the
+     * approval stamp belongs to the admin action that set it.
+     *
+     * Returns true when the statement ran, not when a value actually changed:
+     * MySQL reports zero affected rows when the new values match the old ones,
+     * which is a successful no-op here and not a failure. Use belongsToUser()
+     * beforehand when the distinction matters.
+     *
+     * @param int   $jobId
+     * @param int   $companyId
+     * @param array $values
+     *
+     * @return bool True when the row was the company's own
+     */
+    public function updateForCompany($jobId, $companyId, array $values)
+    {
+        unset($values['status'], $values['approved_at'], $values['company_id'], $values['id']);
+
+        if ($values === []) {
+            return false;
+        }
+
+        $set = implode(', ', array_map(function ($column) {
+            return '`' . $column . '` = ?';
+        }, array_keys($values)));
+
+        $params = array_values($values);
+        $params[] = (int) $jobId;
+        $params[] = (int) $companyId;
+
+        // Affected row count, not proof of a match. MySQL reports 0 when the
+        // values are unchanged, and also 0 when the id or company does not
+        // exist, so a caller must check ownership before relying on this.
+        return Database::execute(
+            'UPDATE `jobs` SET ' . $set . ' WHERE `id` = ? AND `company_id` = ?',
+            $params
+        ) > 0;
+    }
+
+    /**
+     * Delete a listing, but only while it is still a company's own.
+     *
+     * @return bool True when a row was removed
+     */
+    public function deleteForCompany($jobId, $companyId)
+    {
+        return Database::execute(
+            'DELETE FROM `jobs` WHERE `id` = ? AND `company_id` = ?',
+            [(int) $jobId, (int) $companyId]
+        ) > 0;
     }
 
     /** Sort orders offered on the browse page. */
@@ -361,5 +463,55 @@ class Job extends Model
     private function escapeLike($value)
     {
         return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string) $value);
+    }
+
+    /**
+     * Every listing on the platform, for the admin review queue.
+     *
+     * Uses the same joined columns as the public listing query so the admin
+     * table can show the company and category without a second query.
+     *
+     * @param string|null $status Restrict to one status, or null for all
+     * @param int         $page
+     * @param int         $perPage
+     *
+     * @return array{rows: array, total: int, page: int, per_page: int, last_page: int}
+     */
+    public function paginateAll($status = null, $page = 1, $perPage = 20)
+    {
+        $where = '1 = 1';
+        $params = [];
+
+        if ($status !== null && $this->isValidStatus($status)) {
+            $where .= ' AND j.`status` = ?';
+            $params[] = $status;
+        }
+
+        $page = max(1, (int) $page);
+        $perPage = max(1, (int) $perPage);
+
+        $total = (int) Database::fetchColumn(
+            'SELECT COUNT(*) FROM `jobs` j WHERE ' . $where,
+            $params
+        );
+
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $lastPage);
+
+        $rows = Database::fetchAll(
+            'SELECT ' . self::LISTING_COLUMNS . ' ' . self::LISTING_JOINS . '
+              WHERE ' . $where . '
+              ORDER BY j.`created_at` DESC, j.`id` DESC
+              LIMIT ' . $perPage . ' OFFSET ' . (($page - 1) * $perPage),
+            $params
+        );
+
+        return [
+            'rows' => $rows,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'last_page' => $lastPage,
+        ];
     }
 }

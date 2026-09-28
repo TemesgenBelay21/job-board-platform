@@ -52,7 +52,7 @@ class Upload
      * @param int    $maxSize    maximum size in bytes
      * @param bool   $required   whether an empty field is an error
      *
-     * @return array{ok: bool, provided: bool, errors: string[], extension: string|null, size: int}
+     * @return array{ok: bool, provided: bool, errors: string[], extension: string|null, size: int, tmp_name: string|null}
      */
     public static function validate($field, array $allowed, $maxSize, $required = true)
     {
@@ -60,7 +60,7 @@ class Upload
         // ok only because the caller marked the field optional, and it is
         // reported separately from a failure: callers must not treat a
         // deliberately skipped upload as a validation error.
-        $result = ['ok' => false, 'provided' => false, 'errors' => [], 'extension' => null, 'size' => 0];
+        $result = ['ok' => false, 'provided' => false, 'errors' => [], 'extension' => null, 'size' => 0, 'tmp_name' => null];
 
         if (!isset($_FILES[$field]) || !is_array($_FILES[$field])) {
             if ($required) {
@@ -172,6 +172,7 @@ class Upload
 
         $result['ok'] = true;
         $result['extension'] = $extension;
+        $result['tmp_name'] = $file['tmp_name'];
 
         return $result;
     }
