@@ -52,6 +52,53 @@ class Application extends Model
     }
 
     /**
+     * One application, but only if it belongs to this seeker.
+     *
+     * Scoping the lookup in SQL rather than filtering in PHP means a guessed id
+     * belonging to somebody else is indistinguishable from one that does not
+     * exist.
+     *
+     * @return array|null
+     */
+    public function findOwnedBySeeker($applicationId, $seekerId)
+    {
+        return Database::fetch(
+            'SELECT * FROM `applications` WHERE `id` = ? AND `seeker_id` = ? LIMIT 1',
+            [(int) $applicationId, (int) $seekerId]
+        );
+    }
+
+    /**
+     * Which of the given jobs this seeker has already applied to.
+     *
+     * The browse page uses this to label a whole page of cards without
+     * running a query per card. The ids are bound as a generated placeholder
+     * list, so the set is not pasted into the SQL as literal text.
+     *
+     * @param  int   $seekerId
+     * @param  array $jobIds
+     * @return array<int, int> the applied job ids
+     */
+    public function appliedJobIds($seekerId, array $jobIds)
+    {
+        $jobIds = array_values(array_unique(array_map('intval', $jobIds)));
+
+        if (empty($jobIds)) {
+            return [];
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($jobIds), '?'));
+
+        $rows = Database::fetchAll(
+            'SELECT DISTINCT `job_id` FROM `applications`
+              WHERE `seeker_id` = ? AND `job_id` IN (' . $placeholders . ')',
+            array_merge([(int) $seekerId], $jobIds)
+        );
+
+        return array_map('intval', array_column($rows, 'job_id'));
+    }
+
+    /**
      * Create an application, refusing a second one for the same job.
      *
      * @return int|false The new id, or false when the seeker already applied
