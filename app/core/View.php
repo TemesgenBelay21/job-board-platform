@@ -17,6 +17,15 @@ class View
     private static $stacks = [];
 
     /**
+     * @var array Data of the view currently being rendered.
+     *
+     * A partial called from a view or a layout inherits these, so shared
+     * partials like the header can read $user and $title without every layout
+     * having to forward them by hand.
+     */
+    private static $context = [];
+
+    /**
      * Push markup onto a named stack, printed by the layout.
      *
      * The view file is rendered before the layout, so a view can register its
@@ -87,23 +96,41 @@ class View
             throw new HttpException(500, 'Partial not found: ' . $name);
         }
 
-        return self::capture($file, array_merge(self::$shared, $data));
+        return self::capture($file, array_merge(self::inheritedData(), $data));
     }
 
     private static function capture($file, array $data)
     {
         extract($data, EXTR_SKIP);
 
+        self::$context[] = $data;
         ob_start();
 
         try {
             include $file;
         } catch (\Throwable $exception) {
             ob_end_clean();
+            array_pop(self::$context);
             throw $exception;
         }
 
-        return ob_get_clean();
+        $output = ob_get_clean();
+        array_pop(self::$context);
+
+        return $output;
+    }
+
+    /**
+     * Data of the view or layout currently being rendered, used as the starting
+     * point for partials. Values passed to the partial explicitly win.
+     */
+    private static function inheritedData()
+    {
+        if (self::$context === []) {
+            return self::$shared;
+        }
+
+        return array_merge(self::$shared, end(self::$context));
     }
 
     private static function resolveView($view)
