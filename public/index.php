@@ -64,8 +64,22 @@ set_exception_handler(function ($exception) {
             ] : null,
         ], 'layouts/minimal');
     } catch (\Throwable $renderFailure) {
-        // Last resort: never let the error page itself crash the response.
-        echo '<h1>Error ' . e($status) . '</h1><p>Something went wrong.</p>';
+        // The error page itself failed, so fall back to plain output. In the
+        // local environment the original message is included, otherwise a
+        // broken view would hide the actual fault and be impossible to debug.
+        error_log(sprintf(
+            '[%s] error page failed: %s in %s:%d',
+            $exception->getMessage(),
+            $renderFailure->getMessage(),
+            $renderFailure->getFile(),
+            $renderFailure->getLine()
+        ));
+
+        $detail = App::isLocal()
+            ? '<pre>' . e($exception->getMessage() . "\n\n" . $exception->getTraceAsString()) . '</pre>'
+            : '';
+
+        echo '<h1>Error ' . e($status) . '</h1><p>Something went wrong.</p>' . $detail;
     }
 });
 
