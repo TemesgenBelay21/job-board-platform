@@ -32,6 +32,17 @@ if (!function_exists('flash_error')) {
     }
 }
 
+if (!function_exists('flash_info')) {
+    /**
+     * An informational notice: something the user asked for worked, but there
+     * is no follow-up action for them to take.
+     */
+    function flash_info($message)
+    {
+        flash('info', $message);
+    }
+}
+
 if (!function_exists('flashes')) {
     /**
      * Read and clear every queued message, grouped by type.
