@@ -12,6 +12,8 @@
 use App\Core\Router;
 use App\Controllers\AuthController;
 use App\Controllers\HomeController;
+use App\Controllers\ResumeController;
+use App\Controllers\SeekerController;
 
 $router->get('/', [HomeController::class, 'index']);
 
@@ -27,3 +29,13 @@ $router->get('auth/forgot-password', [AuthController::class, 'showForgotPassword
 $router->post('auth/forgot-password', [AuthController::class, 'sendResetLink']);
 $router->get('auth/reset-password', [AuthController::class, 'showResetPassword']);
 $router->post('auth/reset-password', [AuthController::class, 'resetPassword']);
+
+// Seeker ---------------------------------------------------------------------
+$router->get('profile', [SeekerController::class, 'profile']);
+$router->post('profile', [SeekerController::class, 'updateProfile']);
+$router->post('profile/resume', [SeekerController::class, 'uploadResume']);
+$router->post('profile/resume/delete', [SeekerController::class, 'deleteResume']);
+$router->get('seeker/resume', [ResumeController::class, 'own']);
+$router->get('seeker/applications', [SeekerController::class, 'applications']);
+$router->get('seeker/saved-jobs', [SeekerController::class, 'savedJobs']);
+$router->post('seeker/saved-jobs/toggle', [SeekerController::class, 'toggleSavedJob']);
