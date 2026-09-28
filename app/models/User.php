@@ -85,6 +85,13 @@ class User extends Model
      *
      * @return array|null The user row on success, null on failure
      */
+    /**
+     * Verify credentials and return the user, or null when they do not match.
+     *
+     * A deactivated account is still returned: the caller decides how to report
+     * it, so a user who typed the right password learns that the account is
+     * disabled instead of being told the credentials were wrong.
+     */
     public function attempt($email, $password)
     {
         $user = $this->findByEmail($email);
@@ -98,10 +105,6 @@ class User extends Model
         }
 
         if (!password_verify($password, $user['password_hash'])) {
-            return null;
-        }
-
-        if ($user['status'] !== 'active') {
             return null;
         }
 
