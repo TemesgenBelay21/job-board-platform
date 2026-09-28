@@ -68,7 +68,7 @@ abstract class Controller
      * Handle a rejected form: stash the input, flash the first error and go
      * back to the form.
      */
-    protected function backWithErrors(array $errors, $fallback = '/')
+    protected function backWithErrors(array $errors, $fallback = '/', $useReferer = true)
     {
         keep_old_input();
 
@@ -76,7 +76,13 @@ abstract class Controller
             flash_error($message);
         }
 
-        redirect_back($fallback);
+        if ($useReferer) {
+            redirect_back($fallback);
+        }
+
+        // Actions posted to their own URL (apply, withdraw) must not bounce the
+        // browser back to that POST-only address, where a GET would be a 405.
+        redirect($fallback);
     }
 
     /**

@@ -43,10 +43,19 @@ if (!function_exists('asset')) {
 if (!function_exists('redirect')) {
     /**
      * Send a redirect header and stop executing.
+     *
+     * The path may be relative ('seeker/applications') or an absolute URL this
+     * installation owns. Absolute URLs are passed through untouched, because
+     * url() would otherwise prepend the base a second time and produce a
+     * Location like http://host/http://host/jobs/1. A URL pointing somewhere
+     * else is never honoured: it falls back to the given path, so this cannot
+     * be used as an open redirect.
      */
     function redirect($path = '/', array $query = [])
     {
-        header('Location: ' . url($path, $query), true, 302);
+        $target = is_own_url($path) ? $path : url($path, $query);
+
+        header('Location: ' . $target, true, 302);
         exit;
     }
 }
@@ -170,6 +179,24 @@ if (!function_exists('input')) {
     function input($key, $default = null)
     {
         return isset($_POST[$key]) ? $_POST[$key] : $default;
+    }
+}
+
+if (!function_exists('input_string')) {
+    /**
+     * Read a POST value that must be a plain string.
+     *
+     * A client can send an array or an object for any field, e.g.
+     * cover_letter[]=a, so scalar reads go through here rather than casting
+     * blindly and tripping an "array to string conversion" notice.
+     */
+    function input_string($key, $default = '')
+    {
+        if (!isset($_POST[$key]) || !is_string($_POST[$key])) {
+            return $default;
+        }
+
+        return $_POST[$key];
     }
 }
 
