@@ -51,6 +51,27 @@ if (!function_exists('redirect')) {
     }
 }
 
+if (!function_exists('redirect_safe')) {
+    /**
+     * Send the user back to a URL that was stored in a form, if it is our own.
+     *
+     * The candidate is usually an absolute URL captured from the request, so it
+     * must be sent as-is rather than through url(), which would prepend the base
+     * URL a second time. Anything not pointing at this installation is ignored
+     * in favour of the fallback, which keeps a tampered hidden field from
+     * turning a button into an open redirect.
+     */
+    function redirect_safe($candidate, $fallback = '/')
+    {
+        if (is_own_url($candidate)) {
+            header('Location: ' . $candidate, true, 302);
+            exit;
+        }
+
+        redirect($fallback);
+    }
+}
+
 if (!function_exists('is_own_url')) {
     /**
      * True when a URL points back at this installation.
