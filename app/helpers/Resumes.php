@@ -153,7 +153,13 @@ class Resumes
         );
 
         if (!$validation['ok']) {
-            return ['ok' => false, 'errors' => $validation['errors'], 'filename' => null];
+            return ['ok' => false, 'stored' => false, 'errors' => $validation['errors'], 'filename' => null];
+        }
+
+        // An optional field with nothing attached is a successful no-op, not a
+        // stored file. The caller keeps whatever it already had.
+        if (empty($validation['provided'])) {
+            return ['ok' => true, 'stored' => false, 'errors' => [], 'filename' => null];
         }
 
         $file = $_FILES[$field];
@@ -165,12 +171,13 @@ class Resumes
 
             return [
                 'ok' => false,
+                'stored' => false,
                 'errors' => ['The file could not be saved. Please try again.'],
                 'filename' => null,
             ];
         }
 
-        return ['ok' => true, 'errors' => [], 'filename' => $filename];
+        return ['ok' => true, 'stored' => true, 'errors' => [], 'filename' => $filename];
     }
 
     /** Delete a stored file, ignoring anything that is not one of ours. */

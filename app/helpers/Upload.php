@@ -52,21 +52,38 @@ class Upload
      * @param int    $maxSize    maximum size in bytes
      * @param bool   $required   whether an empty field is an error
      *
-     * @return array{ok: bool, errors: string[], extension: string|null, size: int}
+     * @return array{ok: bool, provided: bool, errors: string[], extension: string|null, size: int}
      */
     public static function validate($field, array $allowed, $maxSize, $required = true)
     {
-        $result = ['ok' => false, 'errors' => [], 'extension' => null, 'size' => 0];
+        // 'provided' is false when an optional field was left empty. That case is
+        // ok only because the caller marked the field optional, and it is
+        // reported separately from a failure: callers must not treat a
+        // deliberately skipped upload as a validation error.
+        $result = ['ok' => false, 'provided' => false, 'errors' => [], 'extension' => null, 'size' => 0];
 
         if (!isset($_FILES[$field]) || !is_array($_FILES[$field])) {
             if ($required) {
                 $result['errors'][] = 'Please choose a file to upload.';
+            } else {
+                $result['ok'] = true;
             }
 
             return $result;
         }
 
         $file = $_FILES[$field];
+
+        // An empty optional field is not an error and not an upload either.
+        if (($file['error'] ?? null) === UPLOAD_ERR_NO_FILE) {
+            if ($required) {
+                $result['errors'][] = 'Please choose a file to upload.';
+            } else {
+                $result['ok'] = true;
+            }
+
+            return $result;
+        }
 
         // These four keys are always present for a real upload.
         if (!isset($file['error']) || is_array($file['error'])) {
@@ -77,13 +94,8 @@ class Upload
 
         switch ($file['error']) {
             case UPLOAD_ERR_OK:
+                $result['provided'] = true;
                 break;
-            case UPLOAD_ERR_NO_FILE:
-                if ($required) {
-                    $result['errors'][] = 'Please choose a file to upload.';
-                }
-
-                return $result;
             case UPLOAD_ERR_INI_SIZE:
             case UPLOAD_ERR_FORM_SIZE:
                 $result['errors'][] = 'That file is larger than the ' . self::readableSize($maxSize) . ' limit.';
