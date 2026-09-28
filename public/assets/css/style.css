@@ -1,0 +1,9 @@
+/* ==========================================================================
+   JobBoard - application stylesheet
+   Loaded on every page. Layers are kept in separate files for readability.
+   ========================================================================== */
+
+@import url("base.css");
+@import url("components.css");
+@import url("layout.css");
+@import url("pages.css");
