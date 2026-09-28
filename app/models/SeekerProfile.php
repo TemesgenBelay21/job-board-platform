@@ -16,6 +16,7 @@ class SeekerProfile extends Model
     protected $table = 'seeker_profiles';
 
     protected $fillable = [
+        'user_id',
         'phone',
         'location',
         'headline',
