@@ -3,10 +3,17 @@
  * Registration form.
  *
  * Expects: $selectedRole ('seeker'|'employer')
+ *
+ * The previous choice wins over the ?role= parameter, so a submission that
+ * failed validation comes back with the role and company field the user had
+ * already picked rather than resetting to the default.
  */
-$role = isset($selectedRole) && in_array($selectedRole, ['seeker', 'employer'], true)
-    ? $selectedRole
-    : 'seeker';
+$chosen = old('role');
+$role = in_array($chosen, ['seeker', 'employer'], true)
+    ? $chosen
+    : (isset($selectedRole) && in_array($selectedRole, ['seeker', 'employer'], true)
+        ? $selectedRole
+        : 'seeker');
 ?>
 <div class="form-card">
     <header class="form-card__header">
