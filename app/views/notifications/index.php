@@ -36,10 +36,12 @@ $currentUser = isset($user) ? $user : null;
 <?php else: ?>
     <ul class="notification-list">
         <?php foreach ($notifications as $notification): ?>
-            <li class="notification<?= $notification['is_read'] ? '' : ' notification--unread' ?>">
-                <div>
-                    <p class="notification__message"><?= e($notification['message']) ?></p>
-                    <p class="notification__meta"><?= e(time_ago($notification['created_at'])) ?></p>
+            <li class="notification-item<?= $notification['is_read'] ? ' notification-item--read' : ' notification-item--unread' ?>">
+                <span class="notification-item__dot" aria-hidden="true"></span>
+
+                <div class="notification-item__body">
+                    <p><?= e($notification['message']) ?></p>
+                    <p class="notification-item__time"><?= e(time_ago($notification['created_at'])) ?></p>
                 </div>
 
                 <?php if (!$notification['is_read']): ?>
