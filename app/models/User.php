@@ -131,6 +131,23 @@ class User extends Model
         return $this->update($userId, ['status' => $status]);
     }
 
+    /**
+     * Change the display name, for instance from the profile form.
+     *
+     * Email and role are deliberately not reachable from here: those are
+     * account security changes with their own flows.
+     */
+    public function updateName($userId, $name)
+    {
+        $name = trim((string) $name);
+
+        if ($name === '') {
+            return 0;
+        }
+
+        return $this->update($userId, ['name' => $name]);
+    }
+
     public function countByRole($role = null)
     {
         if ($role === null) {
