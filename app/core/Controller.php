@@ -80,18 +80,24 @@ abstract class Controller
     }
 
     /**
-     * Block the request unless a user is signed in.
+     * Send the visitor to the login form, remembering where they were heading.
      *
-     * @throws HttpException 403
+     * This ends the request, so a protected action can call it as its first
+     * line and rely on nothing after it running for a signed out visitor.
      */
     protected function requireLogin()
     {
         if ($this->user() === null) {
-            // Remember where they were heading so login can send them back.
-            Session::set('intended_url', $this->currentUrl());
+            // Only remember GET targets: replaying a POST after login would
+            // submit the form a second time.
+            $method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
+
+            if ($method === 'GET') {
+                Session::set('intended_url', $this->currentUrl());
+            }
 
             Session::flash('warning', 'Please sign in to continue.');
-            throw new HttpException(403, 'You must be signed in to view that page.');
+            $this->redirect('auth/login');
         }
     }
 
@@ -99,7 +105,8 @@ abstract class Controller
      * Block the request unless the signed in user has one of the given roles.
      *
      * Called at the top of every protected action, so a seeker who types
-     * /employer/jobs gets a 403 rather than another role's data.
+     * /employer/jobs is refused rather than shown another role's data. A
+     * signed out visitor is sent to the login form by requireLogin().
      *
      * @param string|array $roles
      *
@@ -112,7 +119,7 @@ abstract class Controller
         $roles = (array) $roles;
         $user = $this->user();
 
-        if (!in_array($user['role'], $roles, true)) {
+        if ($user === null || !in_array($user['role'], $roles, true)) {
             throw new HttpException(403, 'Your account does not have access to that page.');
         }
     }

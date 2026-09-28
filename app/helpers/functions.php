@@ -51,6 +51,62 @@ if (!function_exists('redirect')) {
     }
 }
 
+if (!function_exists('is_own_url')) {
+    /**
+     * True when a URL points back at this installation.
+     *
+     * Host, port and path prefix are compared separately rather than with a
+     * string prefix test: with base http://localhost, a plain prefix check would
+     * also accept http://localhost.example.com.
+     *
+     * @param string $candidate An absolute URL, e.g. from the Referer header
+     */
+    function is_own_url($candidate)
+    {
+        if (!is_string($candidate) || $candidate === '') {
+            return false;
+        }
+
+        $parts = parse_url($candidate);
+        $base = parse_url(App::baseUrl());
+
+        // A relative URL can only refer to this host, but it is never accepted
+        // here: callers only ever pass absolute URLs.
+        if ($parts === false || empty($parts['host'])) {
+            return false;
+        }
+
+        if (empty($base['host'])) {
+            return false;
+        }
+
+        if (strcasecmp($parts['host'], $base['host']) !== 0) {
+            return false;
+        }
+
+        // Ports matter: :8080 is a different origin to the default.
+        $candidatePort = isset($parts['port']) ? (int) $parts['port'] : default_port($parts['scheme']);
+        $basePort = isset($base['port']) ? (int) $base['port'] : default_port($base['scheme']);
+
+        if ($candidatePort !== $basePort) {
+            return false;
+        }
+
+        $basePath = isset($base['path']) ? rtrim($base['path'], '/') : '';
+        $candidatePath = isset($parts['path']) ? $parts['path'] : '';
+
+        return $basePath === '' || strpos($candidatePath, $basePath) === 0;
+    }
+}
+
+if (!function_exists('default_port')) {
+    /** The port a scheme uses when none is written out. */
+    function default_port($scheme)
+    {
+        return strcasecmp((string) $scheme, 'https') === 0 ? 443 : 80;
+    }
+}
+
 if (!function_exists('redirect_back')) {
     /**
      * Return the user to the page they submitted the form from.
@@ -60,7 +116,7 @@ if (!function_exists('redirect_back')) {
         $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
 
         // Only follow our own URLs so the header cannot be used as an open redirect.
-        if ($referer !== '' && strpos($referer, App::baseUrl()) === 0) {
+        if (is_own_url($referer)) {
             header('Location: ' . $referer, true, 302);
             exit;
         }
