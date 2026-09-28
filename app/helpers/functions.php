@@ -165,3 +165,93 @@ if (!function_exists('query_param')) {
         return trim($_GET[$key]);
     }
 }
+
+if (!function_exists('format_date')) {
+    /**
+     * Format a stored date as "12 Mar 2026", or return an em dash if it is empty.
+     *
+     * An unparseable value is passed through as-is rather than printed as
+     * "1 Jan 1970", which would hide a data problem behind a plausible date.
+     */
+    function format_date($value, $fallback = '—')
+    {
+        if ($value === null || $value === '' || $value === '0000-00-00 00:00:00') {
+            return $fallback;
+        }
+
+        $timestamp = strtotime((string) $value);
+
+        if ($timestamp === false) {
+            return (string) $value;
+        }
+
+        return date('j M Y', $timestamp);
+    }
+}
+
+if (!function_exists('format_datetime')) {
+    /**
+     * Format a stored timestamp as "12 Mar 2026, 14:05".
+     */
+    function format_datetime($value, $fallback = '—')
+    {
+        if ($value === null || $value === '' || $value === '0000-00-00 00:00:00') {
+            return $fallback;
+        }
+
+        $timestamp = strtotime((string) $value);
+
+        if ($timestamp === false) {
+            return (string) $value;
+        }
+
+        return date('j M Y, H:i', $timestamp);
+    }
+}
+
+if (!function_exists('time_ago')) {
+    /**
+     * A short relative description of a timestamp, e.g. "3 days ago".
+     */
+    function time_ago($value)
+    {
+        if ($value === null || $value === '') {
+            return '—';
+        }
+
+        // Accept both a stored datetime string and a unix timestamp.
+        $timestamp = is_numeric($value) ? (int) $value : strtotime((string) $value);
+
+        if ($timestamp === false) {
+            return '—';
+        }
+
+        $seconds = time() - $timestamp;
+
+        // A clock skew or a timestamp from the future reads oddly as "-1 hours".
+        if ($seconds < 45) {
+            return 'just now';
+        }
+
+        // Largest unit that fits, so 24 hours reads as "1 day" rather than
+        // "24 hours", and anything past a year is reported in years.
+        $units = [
+            ['year', 31536000],
+            ['month', 2592000],
+            ['week', 604800],
+            ['day', 86400],
+            ['hour', 3600],
+            ['minute', 60],
+        ];
+
+        foreach ($units as $unit) {
+            if ($seconds >= $unit[1]) {
+                $count = (int) floor($seconds / $unit[1]);
+
+                return $count . ' ' . $unit[0] . ($count === 1 ? '' : 's') . ' ago';
+            }
+        }
+
+        return 'just now';
+    }
+}
