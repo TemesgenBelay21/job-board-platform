@@ -149,3 +149,75 @@ CREATE TABLE IF NOT EXISTS `jobs` (
         FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`)
         ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- applications
+-- ---------------------------------------------------------------------------
+-- A seeker applying to a job. `resume_path` is copied from the seeker's
+-- profile resume at the moment of applying (or replaced with a per application
+-- upload) so a later profile resume change never rewrites history.
+--
+-- The unique key on (seeker_id, job_id) is the authoritative duplicate guard:
+-- even if two requests race past the controller's own check, the second insert
+-- fails instead of creating a duplicate row.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `applications` (
+    `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `job_id`        INT UNSIGNED NOT NULL,
+    `seeker_id`     INT UNSIGNED NOT NULL,
+    `cover_letter`  TEXT         NULL,
+    `resume_path`   VARCHAR(255) NULL,
+    `status`        ENUM('submitted', 'under_review', 'shortlisted', 'rejected', 'hired')
+                    NOT NULL DEFAULT 'submitted',
+    `applied_at`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_applications_seeker_job` (`seeker_id`, `job_id`),
+    KEY `idx_applications_job_status` (`job_id`, `status`),
+    KEY `idx_applications_seeker` (`seeker_id`),
+    KEY `idx_applications_status` (`status`),
+    CONSTRAINT `fk_applications_job`
+        FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_applications_seeker`
+        FOREIGN KEY (`seeker_id`) REFERENCES `seeker_profiles` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- saved_jobs
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `saved_jobs` (
+    `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `seeker_id`  INT UNSIGNED NOT NULL,
+    `job_id`     INT UNSIGNED NOT NULL,
+    `created_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_saved_jobs_seeker_job` (`seeker_id`, `job_id`),
+    KEY `idx_saved_jobs_job` (`job_id`),
+    CONSTRAINT `fk_saved_jobs_seeker`
+        FOREIGN KEY (`seeker_id`) REFERENCES `seeker_profiles` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_saved_jobs_job`
+        FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- notifications
+-- ---------------------------------------------------------------------------
+-- One row per message shown in the header bell. Kept as plain rows rather than
+-- a separate read table so the unread count is a single indexed COUNT.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `notifications` (
+    `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id`    INT UNSIGNED NOT NULL,
+    `message`    VARCHAR(255) NOT NULL,
+    `is_read`    TINYINT(1)   NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_notifications_user_read` (`user_id`, `is_read`),
+    CONSTRAINT `fk_notifications_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
