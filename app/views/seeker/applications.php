@@ -66,6 +66,14 @@ $total = isset($statusCounts) ? array_sum($statusCounts) : 0;
                         <span class="badge badge--muted">Listing closed</span>
                     <?php endif; ?>
                 </div>
+
+                <?php if (in_array($application['status'], ['submitted', 'under_review'], true)): ?>
+                    <form method="post" action="<?= url('seeker/applications/' . (int) $application['id'] . '/withdraw') ?>" data-confirm="Withdraw this application?">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="return_to" value="<?= e(url('seeker/applications', $active === '' ? [] : ['status' => $active])) ?>">
+                        <button class="btn btn--ghost btn--sm" type="submit">Withdraw</button>
+                    </form>
+                <?php endif; ?>
             </article>
         <?php endforeach; ?>
     </div>
