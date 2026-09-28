@@ -99,6 +99,23 @@
     color: var(--color-neutral);
 }
 
+/* Job listing statuses. These are built at runtime as badge--<status>, so the
+   class audit cannot see them and they have to be listed by hand. */
+.badge--open {
+    background-color: var(--color-success-light);
+    color: var(--color-success);
+}
+
+.badge--pending {
+    background-color: var(--color-warning-light);
+    color: var(--color-warning);
+}
+
+.badge--closed {
+    background-color: var(--color-neutral-light);
+    color: var(--color-neutral);
+}
+
 /* --------------------------------------------------------------------------
    Buttons and form controls
    -------------------------------------------------------------------------- */
@@ -212,6 +229,35 @@
 }
 
 /* --------------------------------------------------------------------------
+   Table helpers for the employer and admin lists
+   -------------------------------------------------------------------------- */
+/* A status select plus its Update button, living in a table cell's action
+   group. Stacked on narrow screens so the select keeps a usable width. */
+.status-form {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.status-form .input {
+    min-width: 9.5rem;
+}
+
+/* The current logo shown beside the upload control on the company form. */
+.logo-preview {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+@media (max-width: 720px) {
+    .status-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+/* --------------------------------------------------------------------------
    Uploaded file row
    -------------------------------------------------------------------------- */
 .file-row {
@@ -282,8 +328,27 @@
     min-width: 0;
 }
 
+/* A horizontal filter bar, used by the admin user list. Fields sit side by
+   side on a wide screen and stack on a narrow one. */
+.filter-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--space-4);
+    align-items: end;
+    margin-bottom: var(--space-5);
+}
+
+.filter-form .field {
+    margin-top: 0;
+}
+
+.filter-form .form-actions {
+    margin-top: 0;
+    align-items: center;
+}
+
 .filter-form .field + .field {
-    margin-top: var(--space-4);
+    margin-top: 0;
 }
 
 .sort-form {
