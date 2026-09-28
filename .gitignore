@@ -1,0 +1,29 @@
+# Real credentials live in config/config.php, which is generated from the example file
+config/config.php
+
+# Runtime directories
+/storage/resumes/*
+!/storage/resumes/.gitkeep
+!/storage/resumes/.htaccess
+/public/uploads/logos/*
+!/public/uploads/logos/.gitkeep
+
+# Logs and caches
+*.log
+/logs/
+/storage/logs/
+/storage/cache/
+.php-cs-fixer.cache
+
+# Environment overrides
+.env
+.env.*
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
