@@ -1,0 +1,17 @@
+# Route every request that is not a real file to the front controller.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Serve existing files and directories untouched (assets, uploads, favicon).
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Everything else goes to index.php.
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# No directory listings anywhere under the web root.
+Options -Indexes
+
+DirectoryIndex index.php
