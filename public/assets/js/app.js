@@ -149,27 +149,67 @@
      * they selected before the upload starts.
      */
     function initFileInputs() {
-        document.querySelectorAll('input[type="file"][data-preview]').forEach(function (input) {
-            var output = document.getElementById(input.getAttribute('data-preview'));
+        /* An input marked data-file-input shows the picked file's name and size
+           in place. With data-preview="someId" it writes into that element
+           instead, for the older forms that render a separate caption. */
+        document.querySelectorAll('input[type="file"][data-file-input], input[type="file"][data-preview]')
+            .forEach(function (input) {
+                function target() {
+                    var id = input.getAttribute('data-preview');
 
-            if (!output) {
+                    if (!id) {
+                        return input;
+                    }
+
+                    return document.getElementById(id) || input;
+                }
+
+                function show(output, file) {
+                    if (!file) {
+                        output.textContent = '';
+                        return;
+                    }
+
+                    var kilobytes = file.size / 1024;
+                    var size = kilobytes > 1024
+                        ? (kilobytes / 1024).toFixed(1) + ' MB'
+                        : Math.max(1, Math.round(kilobytes)) + ' KB';
+
+                    output.textContent = file.name + ' (' + size + ')';
+                }
+
+                var output = target();
+
+                /* In place styling for a file input whose name is replaced, so
+                   the browser's own "no file chosen" text is not left showing
+                   under our caption. */
+                if (output === input) {
+                    input.addEventListener('change', function () {
+                        input.classList.toggle('input--has-file', !!(input.files && input.files[0]));
+                    });
+                }
+
+                input.addEventListener('change', function () {
+                    show(target(), input.files && input.files[0]);
+                });
+            });
+    }
+
+    /**
+     * Submit the surrounding form when a select changes. Used for the sort
+     * control on the browse page; a noscript submit button sits beside it, so
+     * the form still works without JavaScript.
+     */
+    function initAutoSubmit() {
+        document.querySelectorAll('[data-auto-submit]').forEach(function (control) {
+            var form = control.form || control.closest('form');
+
+            if (!form) {
                 return;
             }
 
-            input.addEventListener('change', function () {
-                var file = input.files && input.files[0];
-
-                if (!file) {
-                    output.textContent = '';
-                    return;
-                }
-
-                var kilobytes = file.size / 1024;
-                var size = kilobytes > 1024
-                    ? (kilobytes / 1024).toFixed(1) + ' MB'
-                    : Math.max(1, Math.round(kilobytes)) + ' KB';
-
-                output.textContent = file.name + ' (' + size + ')';
+            control.addEventListener('change', function () {
+                form.submit();
             });
         });
     }
@@ -180,11 +220,13 @@
             initConfirmations();
             initSubmitGuards();
             initFileInputs();
+            initAutoSubmit();
         });
     } else {
         initToggles();
         initConfirmations();
         initSubmitGuards();
         initFileInputs();
+        initAutoSubmit();
     }
 })();
