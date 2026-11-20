@@ -34,7 +34,7 @@ return [
         'port' => (int) (getenv('JBP_DB_PORT') ?: 3306),
         'name' => getenv('JBP_DB_NAME') ?: 'job_board_db',
         'user' => getenv('JBP_DB_USER') ?: 'root',
-        'pass' => '',
+        'pass' => getenv('JBP_DB_PASS') ?: '',
         'charset' => 'utf8mb4',
     ],
 
