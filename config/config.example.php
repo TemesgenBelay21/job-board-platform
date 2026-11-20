@@ -12,7 +12,7 @@ return [
     'app' => [
         // 'local' shows the password reset link on screen and renders detailed
         // error pages. Use 'production' when the app is publicly reachable.
-        'env' => 'local',
+        'env' => getenv('JBP_APP_ENV') ?: 'local',
 
         // Left null, the base URL is detected automatically from the request, which
         // lets the app run from any sub-folder. Set it explicitly if you ever
