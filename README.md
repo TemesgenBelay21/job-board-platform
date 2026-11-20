@@ -139,6 +139,10 @@ Document root: `job-board-platform/public`
 Point the virtual host at the `public/` directory only. Nothing above `public/`
 should be reachable over HTTP.
 
+Database settings come from the hosting environment and belong only in
+`config/config.php` or the environment variables documented below. Never add
+them to `config/config.example.php` or commit them.
+
 ## How it works
 
 ```
