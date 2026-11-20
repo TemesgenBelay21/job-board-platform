@@ -30,7 +30,7 @@ return [
     ],
 
     'database' => [
-        'host' => '127.0.0.1',
+        'host' => getenv('JBP_DB_HOST') ?: '127.0.0.1',
         'port' => 3306,
         'name' => 'job_board_db',
         'user' => 'root',
