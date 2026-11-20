@@ -35,7 +35,7 @@ return [
         'name' => getenv('JBP_DB_NAME') ?: 'job_board_db',
         'user' => getenv('JBP_DB_USER') ?: 'root',
         'pass' => getenv('JBP_DB_PASS') ?: '',
-        'charset' => 'utf8mb4',
+        'charset' => getenv('JBP_DB_CHARSET') ?: 'utf8mb4',
     ],
 
     'uploads' => [
