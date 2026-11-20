@@ -131,6 +131,14 @@ to date. They are idempotent, so running one twice is harmless.
 `schema.sql` already contains everything the migrations add, so a fresh install
 needs none of them.
 
+## Deployment
+
+Target host: `job-platform.et-cam.com.et`
+Document root: `job-board-platform/public`
+
+Point the virtual host at the `public/` directory only. Nothing above `public/`
+should be reachable over HTTP.
+
 ## How it works
 
 ```
