@@ -32,7 +32,7 @@ return [
     'database' => [
         'host' => getenv('JBP_DB_HOST') ?: '127.0.0.1',
         'port' => (int) (getenv('JBP_DB_PORT') ?: 3306),
-        'name' => 'job_board_db',
+        'name' => getenv('JBP_DB_NAME') ?: 'job_board_db',
         'user' => 'root',
         'pass' => '',
         'charset' => 'utf8mb4',
