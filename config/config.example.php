@@ -17,7 +17,7 @@ return [
         // Left null, the base URL is detected automatically from the request, which
         // lets the app run from any sub-folder. Set it explicitly if you ever
         // generate absolute URLs outside of a web request (queue workers, mailers).
-        'url' => null,
+        'url' => getenv('JBP_APP_URL') ?: null,
 
         // Shown in the header and page titles.
         'name' => 'JobBoard',
