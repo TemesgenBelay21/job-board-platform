@@ -151,6 +151,20 @@ Production checklist:
 - Create the schema, seed only if demo data is wanted, and verify the writable
   directories exist.
 
+Environment overrides, when set, win over the matching entry in
+`config/config.php`:
+
+| Variable | Purpose |
+| --- | --- |
+| `JBP_APP_ENV` | `local` or `production` |
+| `JBP_APP_URL` | Public base URL |
+| `JBP_DB_HOST` | Database host |
+| `JBP_DB_PORT` | Database port |
+| `JBP_DB_NAME` | Database name |
+| `JBP_DB_USER` | Database user |
+| `JBP_DB_PASS` | Database password |
+| `JBP_DB_CHARSET` | Connection charset |
+
 ## How it works
 
 ```
