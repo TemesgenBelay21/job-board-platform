@@ -143,6 +143,14 @@ Database settings come from the hosting environment and belong only in
 `config/config.php` or the environment variables documented below. Never add
 them to `config/config.example.php` or commit them.
 
+Production checklist:
+
+- Set `app.env` to `production` so debug output stays out of responses.
+- Set `app.url` to `https://job-platform.et-cam.com.et`.
+- Serve the domain over HTTPS; the shipped `.htaccess` redirects HTTP traffic.
+- Create the schema, seed only if demo data is wanted, and verify the writable
+  directories exist.
+
 ## How it works
 
 ```
